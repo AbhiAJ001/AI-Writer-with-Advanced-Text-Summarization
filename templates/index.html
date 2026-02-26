@@ -80,7 +80,12 @@
         <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
             <span class="visually-hidden">Loading...</span>
         </div>
-        <p class="mt-2 text-muted">Generating summary... This may take a few seconds.</p>
+        <p class="mt-2 text-muted">Generating summary... This may take a moment.</p>
+    </div>
+
+    <!-- Error Message -->
+    <div id="errorMessage" class="alert alert-danger" style="display: none;" role="alert">
+        <strong>Error:</strong> <span id="errorText"></span>
     </div>
 
     <!-- Results Section -->
@@ -137,8 +142,9 @@
     document.getElementById('summarizeForm').addEventListener('submit', async function(e) {
         e.preventDefault();
 
-        // Hide previous results and show loading
+        // Hide previous results/errors and show loading
         document.getElementById('results').style.display = 'none';
+        document.getElementById('errorMessage').style.display = 'none';
         document.getElementById('loading').style.display = 'block';
 
         const inputText = document.getElementById('inputText').value;
@@ -210,8 +216,9 @@
 
         } catch (error) {
             console.error('Error:', error);
-            alert('Error: ' + error.message);
             document.getElementById('loading').style.display = 'none';
+            document.getElementById('errorText').textContent = error.message;
+            document.getElementById('errorMessage').style.display = 'block';
         }
     });
 </script>

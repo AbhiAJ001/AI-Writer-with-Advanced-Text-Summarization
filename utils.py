@@ -79,5 +79,5 @@ def calculate_metrics(original_text, summary_text):
         "input_word_count": input_word_count,
         "summary_word_count": summary_word_count,
         "compression_ratio": round(compression_ratio, 2),
-        "readability_score": readability_score
+        "readability_score": round(readability_score, 1)
     }
