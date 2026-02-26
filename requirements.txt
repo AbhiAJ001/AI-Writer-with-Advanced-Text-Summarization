@@ -1,0 +1,10 @@
+flask
+transformers
+torch
+pdfplumber
+scikit-learn
+textstat
+flask-caching
+gunicorn
+sentencepiece
+protobuf

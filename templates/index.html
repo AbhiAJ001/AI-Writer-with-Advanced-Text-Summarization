@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Text Summarizer</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; }
+        .container { max-width: 900px; padding-top: 50px; }
+        .card { box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: none; }
+        .result-box { background-color: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid #e9ecef; }
+        .metric-card { background-color: #e9ecef; padding: 10px; border-radius: 5px; text-align: center; }
+        .keyword-badge { font-size: 0.9em; margin: 2px; }
+        #loading { display: none; }
+        #results { display: none; }
+        .footer { margin-top: 50px; text-align: center; color: #6c757d; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+
+<div class="container mb-5">
+    <div class="text-center mb-5">
+        <h1 class="display-4 fw-bold text-primary">AI Text Summarizer</h1>
+        <p class="lead text-muted">Summarize long documents and PDFs instantly using advanced AI models.</p>
+    </div>
+
+    <div class="row">
+        <!-- Input Section -->
+        <div class="col-lg-12">
+            <div class="card p-4 mb-4">
+                <h4 class="mb-3">Input</h4>
+                <form id="summarizeForm">
+
+                    <ul class="nav nav-tabs mb-3" id="inputTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="text-tab" data-bs-toggle="tab" data-bs-target="#text-pane" type="button" role="tab">Paste Text</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="file-tab" data-bs-toggle="tab" data-bs-target="#file-pane" type="button" role="tab">Upload PDF</button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content mb-3">
+                        <div class="tab-pane fade show active" id="text-pane" role="tabpanel">
+                            <textarea class="form-control" id="inputText" rows="8" placeholder="Paste your text here..."></textarea>
+                        </div>
+                        <div class="tab-pane fade" id="file-pane" role="tabpanel">
+                            <input class="form-control" type="file" id="inputFile" accept=".pdf">
+                            <small class="text-muted">Max file size: 5MB. PDF only.</small>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Model</label>
+                            <select class="form-select" id="modelSelect">
+                                <option value="standard" selected>Standard (Fast - T5)</option>
+                                <option value="pro">Pro (Advanced - BART)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Length</label>
+                            <select class="form-select" id="lengthSelect">
+                                <option value="short">Short (Concise)</option>
+                                <option value="medium" selected>Medium (Balanced)</option>
+                                <option value="detailed">Detailed (Comprehensive)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 py-2 fw-bold">Summarize</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="loading" class="text-center my-5">
+        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2 text-muted">Generating summary... This may take a few seconds.</p>
+    </div>
+
+    <!-- Results Section -->
+    <div id="results">
+        <div class="card p-4 mb-4">
+            <h4 class="mb-3 text-success">Summary</h4>
+            <div class="result-box mb-4">
+                <p id="summaryText" style="white-space: pre-wrap;"></p>
+            </div>
+
+            <h5 class="mb-3">Keywords</h5>
+            <div id="keywordsContainer" class="mb-4">
+                <!-- Keywords will be injected here -->
+            </div>
+
+            <h5 class="mb-3">Metrics</h5>
+            <div class="row g-3">
+                <div class="col-md-3 col-6">
+                    <div class="metric-card">
+                        <small class="text-muted d-block">Input Words</small>
+                        <span id="metricInputWords" class="fw-bold h5">0</span>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="metric-card">
+                        <small class="text-muted d-block">Summary Words</small>
+                        <span id="metricSummaryWords" class="fw-bold h5">0</span>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="metric-card">
+                        <small class="text-muted d-block">Compression</small>
+                        <span id="metricCompression" class="fw-bold h5">0%</span>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="metric-card">
+                        <small class="text-muted d-block">Readability</small>
+                        <span id="metricReadability" class="fw-bold h5">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>&copy; 2024 AI Summarizer Project</p>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    document.getElementById('summarizeForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        // Hide previous results and show loading
+        document.getElementById('results').style.display = 'none';
+        document.getElementById('loading').style.display = 'block';
+
+        const inputText = document.getElementById('inputText').value;
+        const inputFile = document.getElementById('inputFile').files[0];
+        const model = document.getElementById('modelSelect').value;
+        const length = document.getElementById('lengthSelect').value;
+
+        const formData = new FormData();
+        formData.append('model', model);
+        formData.append('length', length);
+
+        // Determine input type
+        const activeTab = document.querySelector('.nav-link.active').id;
+
+        if (activeTab === 'file-tab') {
+            if (inputFile) {
+                formData.append('file', inputFile);
+            } else {
+                alert('Please select a PDF file.');
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('results').style.display = 'none';
+                return;
+            }
+        } else {
+            if (inputText.trim()) {
+                formData.append('text', inputText);
+            } else {
+                alert('Please enter text to summarize.');
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('results').style.display = 'none';
+                return;
+            }
+        }
+
+        try {
+            const response = await fetch('/summarize', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Something went wrong');
+            }
+
+            // Populate results
+            document.getElementById('summaryText').textContent = data.summary;
+
+            // Keywords
+            const keywordsContainer = document.getElementById('keywordsContainer');
+            keywordsContainer.innerHTML = '';
+            data.keywords.forEach(keyword => {
+                const badge = document.createElement('span');
+                badge.className = 'badge bg-secondary keyword-badge';
+                badge.textContent = keyword;
+                keywordsContainer.appendChild(badge);
+            });
+
+            // Metrics
+            document.getElementById('metricInputWords').textContent = data.metrics.input_word_count;
+            document.getElementById('metricSummaryWords').textContent = data.metrics.summary_word_count;
+            document.getElementById('metricCompression').textContent = data.metrics.compression_ratio + '%';
+            document.getElementById('metricReadability').textContent = data.metrics.readability_score;
+
+            // Show results
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('results').style.display = 'block';
+
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error: ' + error.message);
+            document.getElementById('loading').style.display = 'none';
+        }
+    });
+</script>
+
+</body>
+</html>
